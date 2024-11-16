@@ -1,0 +1,39 @@
+package Server;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import Model.Book;
+
+public class ClientHandler implements Runnable {
+    private Socket clientSocket;
+    private List<Book> books;
+
+    public ClientHandler(Socket clientSocket, List<Book> books) {
+        this.clientSocket = clientSocket;
+        this.books = books;
+    }
+
+    @Override
+    public void run() {
+        try {
+            // Creamos los flujos de entrada y salida para la comunicación
+            ObjectOutputStream outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+            ObjectInputStream inputStream = new ObjectInputStream(clientSocket.getInputStream());
+
+            // Enviar la lista de libros al cliente
+            outputStream.writeObject(books);
+            System.out.println("Libros enviados al cliente.");
+
+            // Puedes agregar más lógica aquí si es necesario (ej. recibir solicitudes del cliente)
+
+            // Cerrar los flujos y el socket después de la interacción
+            inputStream.close();
+            outputStream.close();
+            clientSocket.close();
+            System.out.println("Cliente desconectado.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
