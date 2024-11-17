@@ -3,6 +3,7 @@ package Parking;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -20,14 +21,15 @@ public class Parking {
 	public Parking() {
 		initCarsIfPossible();
 	}
-	//TODO: NO PERMITIR DUPLICAR ID NI MATRICULA
+
 	public void showOptions() {
         System.out.println("\n--- Parking ---");
         System.out.println("1. Add a new car");
         System.out.println("2. Delete a car by ID");
         System.out.println("3. Search a car by ID");
         System.out.println("4. List all cars");
-        System.out.println("5. Exit program");
+        System.out.println("5. Export cars to CSV");
+        System.out.println("6. Exit program");
         System.out.print("Choose an option: ");
     }
 	
@@ -54,6 +56,9 @@ public class Parking {
                     listCars();
                     break;
                 case 5:
+                	exportCarsToCSV();
+                	break;
+                case 6:
                     System.out.println("Saving data...");
                     saveCarsToFile();
                     System.out.println("Exiting...");
@@ -61,7 +66,7 @@ public class Parking {
                 default:
                     System.out.println("Invalid option. Please try again");
             }
-        } while (option != 5);
+        } while (option != 6);
 	}
 	
 	public void initCarsIfPossible() {	
@@ -95,11 +100,10 @@ public class Parking {
     }
 	
 	 public void addCar() {
-        System.out.print("ID: ");
-        int id = getValidId();
 
-        System.out.print("License Plate: ");
-        String licensePlate = scanner.nextLine();
+        int id = getValidId(true);
+
+        String licensePlate = getValidLicensePlate();
 
         System.out.print("Brand: ");
         String brand = scanner.nextLine();
@@ -115,8 +119,7 @@ public class Parking {
     }
 
     public void deleteCarById() {
-        System.out.print("Enter the ID of the car to delete: ");
-        int id = getValidId();
+        int id = getValidId(false);
 
         boolean carDeleted = carsList.removeIf(car -> car.getId() == id);
 
@@ -128,8 +131,8 @@ public class Parking {
     }
 
     public void searchCarById() {
-        System.out.print("Enter the ID of the car to search: ");
-        int id = getValidId();
+
+        int id = getValidId(false);
 
         Car foundCar = carsList.stream()
                 .filter(car -> car.getId() == id)
@@ -155,17 +158,70 @@ public class Parking {
         }
     }
     
-    public int getValidId() {
+    public int getValidId(boolean isAddindCar) {
         while (true) {
             System.out.print("Enter a valid id (number): ");
             if (scanner.hasNextInt()) {
                 int value = scanner.nextInt();
                 scanner.nextLine();
-                return value; 
+                if(isAddindCar) {
+                    if (isIdExists(value)) {
+                        System.out.println("ID already exists. Please enter a different ID\n");
+                    } else {
+                        return value;
+                    }
+                } else {
+                	return value;
+                }  
             } else {
                 System.out.println("Invalid input. Please enter a valid number\n");
-                scanner.next();
+                scanner.next(); 
             }
         }
     }
+    
+    public boolean isIdExists(int id) {
+        return carsList.stream().anyMatch(car -> car.getId() == id);
+    }
+    
+    public String getValidLicensePlate() {
+        String licensePlate;
+
+        while (true) {
+            System.out.print("Enter a unique License Plate: ");
+            licensePlate = scanner.nextLine().trim();
+
+            if (isLicensePlateExists(licensePlate)) {
+                System.out.println("License Plate already exists. Please enter a different one\n");
+            } else {
+                break;
+            }
+        }
+        return licensePlate;
+    }
+    
+    public boolean isLicensePlateExists(String licensePlate) {
+        return carsList.stream().anyMatch(car -> car.getLicensePlate().equalsIgnoreCase(licensePlate));
+    }
+
+    public void exportCarsToCSV() {
+        String fileName = "coches.csv";
+
+        try (FileWriter writer = new FileWriter(fileName)) {
+            writer.write("ID;License Plate;Brand;Model;Color\n");
+
+            for (Car car : carsList) {
+                writer.write(car.getId() + ";" + 
+                             car.getLicensePlate() + ";" + 
+                             car.getBrand() + ";" + 
+                             car.getModel() + ";" + 
+                             car.getColor() + "\n");
+            }
+
+            System.out.println("Cars exported to " + fileName + " successfully");
+        } catch (IOException e) {
+            System.out.println("Error exporting cars to CSV: " + e.getMessage());
+        }
+    }
+
 }
